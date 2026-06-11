@@ -928,16 +928,70 @@ export default function App() {
   };
 
   // Base64 file converter for product/service image upload
-  const handleImageUpload = (file: File, callback: (base64: string) => void) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        callback(reader.result);
-      }
-    };
-    reader.onerror = (error) => console.error("Error reading file:", error);
-  };
+  //const handleImageUpload = (file: File, callback: (base64: string) => void) => {
+  //  const reader = new FileReader();
+  //  reader.readAsDataURL(file);
+  //  reader.onload = () => {
+  //    if (typeof reader.result === "string") {
+ //       callback(reader.result);
+ //     }
+ //   };
+ //   reader.onerror = (error) => console.error("Error reading file:", error);
+ // };
+
+ // Upload product/service/admin images to Vercel Blob
+const handleImageUpload = async (
+  file: File,
+  callback: (url: string) => void,
+  folder: "products" | "services" | "logos" | "qr" = "products"
+) => {
+  try {
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Image is too large. Please upload an image smaller than 3 MB.");
+      return;
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.readAsDataURL(file);
+
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Invalid image file."));
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Could not read image file."));
+    });
+
+    const response = await fetch("/api/media/upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        dataUrl,
+        filename: file.name,
+        folder
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Image upload failed.");
+    }
+
+    callback(data.url);
+  } catch (error: any) {
+    console.error("Image upload failed:", error);
+    alert(error.message || "Image upload failed.");
+  }
+};
 
   // ==========================================
   // ADMIN: Create, Update, Delete Services
@@ -1853,7 +1907,11 @@ export default function App() {
                             accept="image/*"
                             onChange={(e) => {
                               if (e.target.files?.[0]) {
-                                handleImageUpload(e.target.files[0], (b64) => setQrForm({ ...qrForm, image: b64 }));
+                                handleImageUpload(
+  e.target.files[0],
+  (url) => setQrForm({ ...qrForm, image: url }),
+  "qr"
+);
                               }
                             }}
                             className="w-full bg-white border border-stone-250 rounded-lg p-1 text-xs text-stone-900"
@@ -3565,7 +3623,11 @@ export default function App() {
                                 accept="image/*"
                                 onChange={(e) => {
                                   if (e.target.files?.[0]) {
-                                    handleImageUpload(e.target.files[0], (b64) => setProductForm({ ...productForm, image: b64 }));
+                                    handleImageUpload(
+  e.target.files[0],
+  (url) => setProductForm({ ...productForm, image: url }),
+  "products"
+);
                                   }
                                 }}
                                 className="w-full bg-stone-100 border border-stone-300 rounded-lg text-[10px] p-1"
@@ -3771,7 +3833,11 @@ export default function App() {
                               accept="image/*"
                               onChange={(e) => {
                                 if (e.target.files?.[0]) {
-                                  handleImageUpload(e.target.files[0], (b64) => setServiceForm({ ...serviceForm, image: b64 }));
+                                  handleImageUpload(
+  e.target.files[0],
+  (url) => setServiceForm({ ...serviceForm, image: url }),
+  "services"
+);
                                 }
                               }}
                               className="w-full bg-stone-100 border border-stone-305 text-[10px] p-1 rounded"
