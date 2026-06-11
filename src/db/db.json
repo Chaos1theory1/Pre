@@ -200,7 +200,7 @@
     "adminEmail": "biotechagro.digital@gmail.com",
     "passwordSalt": "b8da6486b87442bb2e25bed09dbb69ce",
     "passwordHash": "9e236994582262b252ec27170bcd36a50552634eca6c3b8ef162e5a39c9f211a",
-    "isDefaultPassword": true,
+    "isDefaultPassword": false,
     "lastLogin": "2026-06-10T11:45:03.216Z",
     "resetCode": {
       "code": "184658",
